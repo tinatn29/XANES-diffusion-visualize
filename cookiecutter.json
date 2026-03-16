@@ -1,0 +1,8 @@
+{
+  "project_name": "XANES-diffusion-visualize",
+  "github_username_or_orgname": "tinatn29",
+  "github_repo_name": "XANES-diffusion-visualize",
+  "conda_pypi_package_dist_name": "xanes-diffusion-visualize",
+  "package_dir_name": "visualize",
+  "contributors": "Tanaporn Na Narong"
+}
