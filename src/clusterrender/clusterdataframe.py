@@ -56,12 +56,18 @@ class ClusterDataFrame(pd.DataFrame):
         return cls(df, central_atom=central_atom)
 
     @classmethod
-    def from_xyz(cls, file_path):
+    def from_xyz(cls, file_path, center_species=None, center_index=None):
         """Create a ClusterDataFrame from an XYZ file."""
         from utils.xyz_parser import parse_xyz_file
 
         df = parse_xyz_file(file_path)
-        return cls(df)
+        cdf = cls(df)
+        # center the cluster if center_species or center_index is specified
+        if center_species is not None or center_index is not None:
+            cdf.center_cluster(
+                center_species=center_species, center_index=center_index
+            )
+        return cdf
 
     def add_closest_lower_shell_neighbor(self):
         """Add a column for the closest lower shell neighbor."""
@@ -109,3 +115,46 @@ class ClusterDataFrame(pd.DataFrame):
         self["nearest_lower_shell_neighbor"] = self.apply(
             find_closest_lower_shell_neighbor, axis=1
         )
+
+    def center_cluster(self, center_species=None, center_index=None):
+        """Center the cluster on a specified atom by translating all
+        coordinates.
+
+        Output is sorted by distance from the new origin, with the new
+        center atom as the first row.
+        """
+        if center_index is not None:
+            if center_index < 0 or center_index >= len(self):
+                raise IndexError("Index out of bounds for cluster.")
+            center_atom = self.iloc[center_index]
+        elif center_species is not None:
+            # sort everything by distance first
+            if "distance" not in self.columns:
+                self["distance"] = np.sqrt(
+                    self["x"] ** 2 + self["y"] ** 2 + self["z"] ** 2
+                )
+            self.sort_values(by="distance").reset_index(
+                drop=True, inplace=True
+            )
+            # center_atom = atom of the specified species closest to origin
+            try:
+                center_atom = self[self["species"] == center_species].loc[0]
+            except IndexError:
+                raise ValueError(
+                    f"No atom with species '{center_species}' found."
+                )
+        else:
+            raise ValueError(
+                "Must specify either species or index to center on."
+            )
+
+        # translate the coordinates
+        self["x"] -= center_atom["x"]
+        self["y"] -= center_atom["y"]
+        self["z"] -= center_atom["z"]
+        # recompute distance from new origin and sort
+        self["distance"] = np.sqrt(
+            self["x"] ** 2 + self["y"] ** 2 + self["z"] ** 2
+        )
+        self.sort_values(by="distance", inplace=True)
+        self.reset_index(drop=True, inplace=True)
