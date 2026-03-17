@@ -55,6 +55,14 @@ class ClusterDataFrame(pd.DataFrame):
         df = parse_groundtruth_row(row, central_atom)
         return cls(df, central_atom=central_atom)
 
+    @classmethod
+    def from_xyz(cls, file_path):
+        """Create a ClusterDataFrame from an XYZ file."""
+        from utils.xyz_parser import parse_xyz_file
+
+        df = parse_xyz_file(file_path)
+        return cls(df)
+
     def add_closest_lower_shell_neighbor(self):
         """Add a column for the closest lower shell neighbor."""
         if "shell" not in self.columns:

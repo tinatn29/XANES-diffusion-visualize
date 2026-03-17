@@ -72,3 +72,28 @@ def test_clusterdataframe_add_closest_lower_shell_neighbor(
     # check type and content
     assert isinstance(cdf, ClusterDataFrame)
     pd.testing.assert_frame_equal(cdf, expected_df, check_dtype=False)
+
+
+# set up test data for from_xyz
+output_gt_1 = pd.read_pickle("tests/test_data/gt_1_output.pkl")
+output_gen_1 = pd.read_pickle("tests/test_data/gen_1_output.pkl")
+output_gen_2 = pd.read_pickle("tests/test_data/gen_2_output.pkl")
+# map columns to string
+output_gt_1.columns = output_gt_1.columns.map(str)
+output_gen_1.columns = output_gen_1.columns.map(str)
+output_gen_2.columns = output_gen_2.columns.map(str)
+
+test_xyz_inputs = [
+    ("tests/test_data/gt_1.xyz", output_gt_1),
+    ("tests/test_data/gt_1.txt", output_gt_1),
+    ("tests/test_data/gen_1.xyz", output_gen_1),
+    ("tests/test_data/gen_2.xyz", output_gen_2),
+]
+
+
+@pytest.mark.parametrize("file_path, expected_df", test_xyz_inputs)
+def test_clusterdataframe_from_xyz(file_path, expected_df):
+    cdf = ClusterDataFrame.from_xyz(file_path)
+    # check type and content
+    assert isinstance(cdf, ClusterDataFrame)
+    pd.testing.assert_frame_equal(cdf, expected_df, check_dtype=False)
