@@ -47,6 +47,9 @@ class ClusterDataFrame(pd.DataFrame):
         if central_atom is not None:
             self.central_atom = central_atom
 
+        # we might use this to only transform nearest neighbors
+        self.subcluster = None
+
     @classmethod
     def from_groundtruth_row(cls, row, central_atom):
         """Create a ClusterDataFrame from a row of a ground truth DataFrame."""
