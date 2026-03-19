@@ -30,7 +30,6 @@ points_2_perm = points_2.iloc[[1, 0, 2]].reset_index(drop=True)
 
 # load cdf from files
 gt_cdf_1 = pd.read_pickle("tests/test_data/gt_1_output.pkl")
-gen_cdf_1 = pd.read_pickle("tests/test_data/gen_1_output.pkl")
 gt_cdf_1_full = pd.read_pickle("tests/test_data/test_groundtruth_output_1.pkl")
 # permuted cdf_1
 gt_cdf_1_perm = gt_cdf_1.iloc[[1, 0, 2, 3, 4]].reset_index(drop=True)
