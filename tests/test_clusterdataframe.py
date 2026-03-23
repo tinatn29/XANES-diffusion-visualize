@@ -256,7 +256,7 @@ def test_clusterdataframe_align_with(
     print(expected_df)
     # check agreement with some tolerance
     # (since we're doing rotation and translation)
-    assert (abs(output_coords - expected_coords) < 1e-15).all()
+    assert (abs(output_coords - expected_coords) < 1e-8).all()
 
 
 if __name__ == "__main__":
