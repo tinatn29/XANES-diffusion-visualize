@@ -67,6 +67,10 @@ data = {
     "df_centered_gen_1_O": read_pickle_and_map_columns(
         "tests/test_data/gen_1_centered_1.pkl"
     ),
+    # transformed coordinates
+    "df_gt_1_rotated": read_pickle_and_map_columns(
+        "./tests/test_data/gt_1_rotated.pkl"
+    ),
 }
 
 test_gt_inputs = [
@@ -197,3 +201,98 @@ def test_clusterdataframe_center_cluster(
     # check type and content
     assert isinstance(cdf, ClusterDataFrame)
     pd.testing.assert_frame_equal(cdf, expected_df, check_dtype=False)
+
+
+# set up test data for align_with
+test_align_inputs = [
+    (
+        data["df_gt_full_1"],
+        data["df_gt_full_1"],
+        True,
+        True,
+        data["df_gt_full_1"],
+    ),
+    (
+        data["df_gt_full_1"],
+        data["df_gt_full_1"],
+        False,
+        True,
+        data["df_gt_full_1"],
+    ),
+    (
+        data["df_gt_full_2"],
+        data["df_gt_full_2"],
+        True,
+        True,
+        data["df_gt_full_2"],
+    ),
+    (
+        data["df_gt_1_rotated"],
+        data["df_gt_full_1"],
+        True,
+        True,
+        data["df_gt_full_1"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "input_df, reference_df, mask, allow_reflection, expected_df",
+    test_align_inputs,
+)
+def test_clusterdataframe_align_with(
+    input_df, reference_df, mask, allow_reflection, expected_df
+):
+    cdf = ClusterDataFrame(input_df)
+    ref_cdf = ClusterDataFrame(reference_df)
+    R, t = cdf.align_with(
+        ref_cdf, mask=mask, allow_reflection=allow_reflection
+    )
+    # check type and content
+    assert isinstance(cdf, ClusterDataFrame)
+    output_coords = cdf[["x", "y", "z"]].values
+    print(cdf)
+    expected_coords = expected_df[["x", "y", "z"]].values
+    print(expected_df)
+    # check agreement with some tolerance
+    # (since we're doing rotation and translation)
+    assert (abs(output_coords - expected_coords) < 1e-8).all()
+
+
+if __name__ == "__main__":
+    import numpy as np
+
+    df_1 = data["df_gt_full_1"][["species", "x", "y", "z"]].copy()
+
+    def rotation_matrix(angle, axis):
+        """Generate a rotation matrix for a given angle and axis."""
+        axis = axis / np.linalg.norm(axis)
+        a = np.cos(angle / 2)
+        b, c, d = -axis * np.sin(angle / 2)
+        return np.array(
+            [
+                [
+                    a * a + b * b - c * c - d * d,
+                    2 * (b * c - a * d),
+                    2 * (b * d + a * c),
+                ],
+                [
+                    2 * (b * c + a * d),
+                    a * a + c * c - b * b - d * d,
+                    2 * (c * d - a * b),
+                ],
+                [
+                    2 * (b * d - a * c),
+                    2 * (c * d + a * b),
+                    a * a + d * d - b * b - c * c,
+                ],
+            ]
+        )
+
+    cdf_1_mod = ClusterDataFrame(df_1)
+    # rotate 45 degrees around z-axis
+    cdf_1_mod.apply_transformation(
+        rotation_matrix(np.pi / 4, np.array([0, 0, 1])),
+        np.array([0, -0.01, 0.01]),
+    )
+    # cdf_1_mod.to_pickle("./tests/test_data/gt_1_rotated_translated.pkl")

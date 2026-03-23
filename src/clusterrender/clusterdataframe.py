@@ -119,6 +119,12 @@ class ClusterDataFrame(pd.DataFrame):
             find_closest_lower_shell_neighbor, axis=1
         )
 
+    def apply_transformation(self, R, t):
+        """Apply a rotation and translation to the cluster coordinates."""
+        coords = self[["x", "y", "z"]].values
+        transformed_coords = (R @ coords.T).T + t
+        self[["x", "y", "z"]] = transformed_coords
+
     def center_cluster(self, center_species=None, center_index=None):
         """Center the cluster on a specified atom by translating all
         coordinates.
@@ -161,3 +167,54 @@ class ClusterDataFrame(pd.DataFrame):
         )
         self.sort_values(by="distance", inplace=True)
         self.reset_index(drop=True, inplace=True)
+
+    def align_with(self, reference_cdf, mask=True, allow_reflection=True):
+        """Permute and align the cluster to match the order and orientation of
+        a reference ClusterDataFrame."""
+        from clusterrender.transform.align import align_clusters
+
+        # Ensure both DataFrames have the same number of atoms
+        if len(self) != len(reference_cdf):
+            raise ValueError(
+                "Both ClusterDataFrames must have the same number of atoms \
+                    for alignment."
+            )
+
+        # make sure both clusters are centered
+        # and sorted by distance from origin
+        self.center_cluster(center_index=0)
+        reference_cdf.center_cluster(center_index=0)
+
+        # if mask is True and the reference cluster has shell information,
+        # only align the center and the nearest neighbors
+        if mask and "shell" in reference_cdf.columns:
+            # only align the center (at origin) and nearest neighbors (shell 1)
+            reference_cdf.subcluster = reference_cdf[
+                reference_cdf["shell"] <= 1
+            ].copy()
+            self.subcluster = self[reference_cdf["shell"] <= 1].copy()
+            print(
+                f"Aligning {len(self.subcluster)} atoms in subcluster \
+                    (center + nearest neighbors) to reference cluster."
+            )
+        else:
+            # use the full cluster for alignment
+            reference_cdf.subcluster = reference_cdf.copy()
+            self.subcluster = self.copy()
+            print(
+                f"Aligning all {len(self.subcluster)} atoms in cluster to \
+                    reference cluster."
+            )
+
+        # align the subcluster to the reference subcluster
+        self.subcluster, R, t = align_clusters(
+            self.subcluster,
+            reference_cdf.subcluster,
+            need_permute=True,
+            allow_reflection=allow_reflection,
+        )
+
+        # apply the same transformation to the full cluster
+        self.apply_transformation(R, t)
+
+        return R, t
