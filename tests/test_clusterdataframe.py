@@ -260,39 +260,5 @@ def test_clusterdataframe_align_with(
 
 
 if __name__ == "__main__":
-    import numpy as np
-
-    df_1 = data["df_gt_full_1"][["species", "x", "y", "z"]].copy()
-
-    def rotation_matrix(angle, axis):
-        """Generate a rotation matrix for a given angle and axis."""
-        axis = axis / np.linalg.norm(axis)
-        a = np.cos(angle / 2)
-        b, c, d = -axis * np.sin(angle / 2)
-        return np.array(
-            [
-                [
-                    a * a + b * b - c * c - d * d,
-                    2 * (b * c - a * d),
-                    2 * (b * d + a * c),
-                ],
-                [
-                    2 * (b * c + a * d),
-                    a * a + c * c - b * b - d * d,
-                    2 * (c * d - a * b),
-                ],
-                [
-                    2 * (b * d - a * c),
-                    2 * (c * d + a * b),
-                    a * a + d * d - b * b - c * c,
-                ],
-            ]
-        )
-
-    cdf_1_mod = ClusterDataFrame(df_1)
-    # rotate 45 degrees around z-axis
-    cdf_1_mod.apply_transformation(
-        rotation_matrix(np.pi / 4, np.array([0, 0, 1])),
-        np.array([0, -0.01, 0.01]),
-    )
-    # cdf_1_mod.to_pickle("./tests/test_data/gt_1_rotated_translated.pkl")
+    df = data["df_gt_full_1"]  # schema
+    print(df)
