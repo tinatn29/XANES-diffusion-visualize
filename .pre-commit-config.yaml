@@ -1,6 +1,6 @@
 default_language_version:
   python: python3
-exclude: \.(pkl|xyz|txt)$
+exclude: \.(pkl|xyz|txt|json)$
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit hooks
