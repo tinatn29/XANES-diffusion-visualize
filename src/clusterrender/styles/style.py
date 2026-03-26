@@ -15,7 +15,7 @@ def _load_element_styles() -> Dict[str, Dict[str, Any]]:
     Returns
     -------
     dict of str : dict
-        Dictionary mapping element symbols to style dictionaries.
+        The style dictionary to load each element's color and radius from.
     """
     global _element_styles
     if _element_styles is None:
@@ -35,12 +35,12 @@ def get_element_style(element: str) -> Dict[str, Any]:
     Parameters
     ----------
     element : str
-        Element symbol (e.g., 'H', 'C', 'O').
+        The element symbol (e.g., 'H', 'C', 'O').
 
     Returns
     -------
     dict
-        Dictionary with 'color' (RGB list) and 'radius' (float).
+        The styles dictionary with 'color' (RGB list) and 'radius' (float).
 
     Raises
     ------
