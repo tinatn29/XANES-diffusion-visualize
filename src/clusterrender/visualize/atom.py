@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+import matplotlib.colors
 import numpy as np
 from clusterrender.styles.style import get_element_style
 
@@ -25,7 +25,7 @@ def _lighten_color(color, factor):
     tuple
         Lightened RGB color tuple.
     """
-    rgb = plt.colors.to_rgb(color)
+    rgb = matplotlib.colors.to_rgb(color)
     lightened_rgb = tuple((1 - factor) * c + factor for c in rgb)
     return lightened_rgb
 
