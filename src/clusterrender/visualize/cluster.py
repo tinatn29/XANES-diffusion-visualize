@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.colors
 from clusterrender.styles.style import get_clusterdataframe_styles
 from clusterrender.visualize.atom import draw_atom
 
@@ -11,8 +12,8 @@ with colors and radii based on their element types.
 def draw_cluster(
     df,
     ax,
-    x_column="x",
-    y_column="y",
+    x_column="e1",
+    y_column="e2",
     species_column="species",
     scale=200,
     alpha=1.0,
@@ -29,9 +30,9 @@ def draw_cluster(
         DataFrame containing atom information.
     ax : matplotlib.axes.Axes
         Matplotlib axes object to draw on.
-    x_column : str, default 'x'
+    x_column : str, default 'e1'
         Name of column containing x coordinates.
-    y_column : str, default 'y'
+    y_column : str, default 'e2'
         Name of column containing y coordinates.
     species_column : str, default 'species'
         Name of column containing element symbols.
@@ -39,11 +40,15 @@ def draw_cluster(
         Scaling factor for atom sizes.
     alpha : float, default 1.0
         Transparency level for all atoms.
-    override_colors : array-like, optional
-        Custom colors for each atom. Shape should be (n_atoms, 3)
-        or (n_atoms,).
-    override_radii : array-like, optional
-        Custom radii for each atom. Shape should be (n_atoms,).
+    override_colors : dict or array-like, optional
+        Custom colors for atoms. Can be:
+        - dict: {species: color} mapping (e.g., {'Fe': 'red', 'O': 'blue'})
+        - array-like: Custom colors for each atom.
+        Shape should be (n_atoms, 3) or (n_atoms,)
+    override_radii : dict or array-like, optional
+        Custom radii for atoms. Can be:
+        - dict: {species: radius} mapping (e.g., {'Fe': 1.2, 'O': 0.8})
+        - array-like: Custom radii for each atom. Shape should be (n_atoms,)
     uniform_color : array-like, optional
         Single color to use for all atoms (overrides per-element colors).
     uniform_radius : float, optional
@@ -75,18 +80,43 @@ def draw_cluster(
         )
         radii = np.full(len(df), uniform_radius)
     else:
-        # Get element-specific styles efficiently
+        # Get element-specific styles as base
         style_colors, style_radii = get_clusterdataframe_styles(
             df, species_column
         )
 
-        # Apply overrides
-        colors = (
-            override_colors if override_colors is not None else style_colors
-        )
-        radii = override_radii if override_radii is not None else style_radii
+        # Start with default colors and radii
+        colors = style_colors.copy()
+        radii = style_radii.copy()
 
-        # Apply uniform overrides if specified
+        # Apply overrides based on type (dict or array)
+        if override_colors is not None:
+            if isinstance(override_colors, dict):
+                # Dict mapping: {species: color}
+                species_list = df[species_column].values
+                for i, species in enumerate(species_list):
+                    if species in override_colors:
+                        new_color = override_colors[species]
+                        if isinstance(new_color, str):
+                            colors[i] = matplotlib.colors.to_rgb(new_color)
+                        else:
+                            colors[i] = new_color
+            else:
+                # Array-like override (backward compatibility)
+                colors = np.array(override_colors)
+
+        if override_radii is not None:
+            if isinstance(override_radii, dict):
+                # Dict mapping: {species: radius}
+                species_list = df[species_column].values
+                for i, species in enumerate(species_list):
+                    if species in override_radii:
+                        radii[i] = override_radii[species]
+            else:
+                # Array-like override (backward compatibility)
+                radii = np.array(override_radii)
+
+        # Apply uniform overrides (highest priority)
         if uniform_color is not None:
             colors = (
                 np.tile(uniform_color, (len(df), 1))
@@ -120,12 +150,16 @@ def draw_cluster(
 def draw_cluster_vectorized(
     df,
     ax,
-    x_column="x",
-    y_column="y",
+    x_column="e1",
+    y_column="e2",
     species_column="species",
     alpha=1.0,
     scale=200,
     n_layers=10,
+    override_colors=None,
+    override_radii=None,
+    uniform_color=None,
+    uniform_radius=None,
 ):
     """Draw multiple atoms using vectorized operations for better performance.
 
@@ -138,9 +172,9 @@ def draw_cluster_vectorized(
         DataFrame containing atom information.
     ax : matplotlib.axes.Axes
         Matplotlib axes object to draw on.
-    x_column : str, default 'x'
+    x_column : str, default 'e1'
         Name of column containing x coordinates.
-    y_column : str, default 'y'
+    y_column : str, default 'e2'
         Name of column containing y coordinates.
     species_column : str, default 'species'
         Name of column containing element symbols.
@@ -150,6 +184,19 @@ def draw_cluster_vectorized(
         Scaling factor for atom sizes.
     n_layers : int, default 10
         Number of layers for 3D effect (fewer = faster).
+    override_colors : dict or array-like, optional
+        Custom colors for atoms. Can be:
+        - dict: {species: color} mapping (e.g., {'Fe': 'red', 'O': 'blue'})
+        - array-like: Custom colors for each atom.
+        Shape should be (n_atoms, 3) or (n_atoms,)
+    override_radii : dict or array-like, optional
+        Custom radii for atoms. Can be:
+        - dict: {species: radius} mapping (e.g., {'Fe': 1.2, 'O': 0.8})
+        - array-like: Custom radii for each atom. Shape should be (n_atoms,)
+    uniform_color : array-like, optional
+        Single color to use for all atoms (overrides per-element colors).
+    uniform_radius : float, optional
+        Single radius to use for all atoms (overrides per-element radii).
 
     Returns
     -------
@@ -163,10 +210,47 @@ def draw_cluster_vectorized(
     if len(df) == 0:
         return
 
-    # Get coordinates and styles efficiently
+    # Get coordinates and base styles
     x_coords = df[x_column].values
     y_coords = df[y_column].values
     colors, radii = get_clusterdataframe_styles(df, species_column)
+
+    # Apply overrides based on type (dict or array)
+    if override_colors is not None:
+        if isinstance(override_colors, dict):
+            # Dict mapping: {species: color}
+            species_list = df[species_column].values
+            for i, species in enumerate(species_list):
+                if species in override_colors:
+                    new_color = override_colors[species]
+                    if isinstance(new_color, str):
+                        colors[i] = matplotlib.colors.to_rgb(new_color)
+                    else:
+                        colors[i] = new_color
+        else:
+            # Array-like override
+            colors = np.array(override_colors)
+
+    if override_radii is not None:
+        if isinstance(override_radii, dict):
+            # Dict mapping: {species: radius}
+            species_list = df[species_column].values
+            for i, species in enumerate(species_list):
+                if species in override_radii:
+                    radii[i] = override_radii[species]
+        else:
+            # Array-like override
+            radii = np.array(override_radii)
+
+    # Apply uniform overrides (highest priority)
+    if uniform_color is not None:
+        colors = (
+            np.tile(uniform_color, (len(df), 1))
+            if len(np.array(uniform_color).shape) == 1
+            else np.array([uniform_color] * len(df))
+        )
+    if uniform_radius is not None:
+        radii = np.full(len(df), uniform_radius)
 
     # Calculate base sizes
     base_sizes = scale * np.sqrt(radii)
