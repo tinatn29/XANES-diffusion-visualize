@@ -3,7 +3,10 @@ import numpy as np
 from clusterrender.styles.style import get_element_style
 
 """
-Render atoms as spheres with colors and radii based on their element types.
+Draw an atom as a sphere with 3D effect using overlapping circles.
+The atom's color and size are determined by its element type,
+with optional overrides.
+When alpha < 1.0, an outline is added to maintain visual definition.
 """
 
 
