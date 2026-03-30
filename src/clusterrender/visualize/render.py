@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Union, Dict, Any
 import numpy as np
 from clusterrender.visualize.project2d import project_to_plane
-from clusterrender.visualize.cluster import draw_cluster
+from clusterrender.visualize.cluster import draw_cluster, draw_cluster_outline
 from clusterrender.visualize.bonds import draw_bonds, get_bond_list
 import matplotlib.pyplot as plt
 
@@ -44,6 +44,24 @@ class ClusterStyle:
         if not 0 <= self.alpha <= 1:
             raise ValueError("ClusterStyle alpha must be between 0 and 1")
 
+    def get_kwargs(self):
+        kwargs = {
+            "x_column": self.x_column,
+            "y_column": self.y_column,
+            "species_column": self.species_column,
+            "scale": self.scale,
+            "alpha": self.alpha,
+        }
+        if self.override_colors is not None:
+            kwargs["override_colors"] = self.override_colors
+        if self.override_radii is not None:
+            kwargs["override_radii"] = self.override_radii
+        if self.uniform_color is not None:
+            kwargs["uniform_color"] = self.uniform_color
+        if self.uniform_radius is not None:
+            kwargs["uniform_radius"] = self.uniform_radius
+        return kwargs
+
 
 @dataclass
 class BondStyle:
@@ -77,6 +95,17 @@ class BondStyle:
             )
         if not 0 <= self.alpha <= 1:
             raise ValueError("BondStyle alpha must be between 0 and 1")
+
+    def get_kwargs(self):
+        kwargs = {
+            "x_column": self.x_column,
+            "y_column": self.y_column,
+            "color": self.color,
+            "width": self.width,
+            "alpha": self.alpha,
+            "style": self.style,
+        }
+        return kwargs
 
 
 def render_cluster(
@@ -159,17 +188,7 @@ def render_cluster(
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # Step 4: Prepare parameters for drawing functions
-    cluster_kwargs = {
-        "x_column": cluster_style.x_column,
-        "y_column": cluster_style.y_column,
-        "species_column": cluster_style.species_column,
-        "scale": cluster_style.scale,
-        "alpha": cluster_style.alpha,
-        "override_colors": cluster_style.override_colors,
-        "override_radii": cluster_style.override_radii,
-        "uniform_color": cluster_style.uniform_color,
-        "uniform_radius": cluster_style.uniform_radius,
-    }
+    cluster_kwargs = cluster_style.get_kwargs()
     # Remove None values to avoid overriding function defaults
     cluster_kwargs = {k: v for k, v in cluster_kwargs.items() if v is not None}
 
@@ -185,17 +204,10 @@ def render_cluster(
             distance_cutoff=bond_style.distance_cutoff,
         )
 
-        bond_kwargs = {
-            "bonds": bonds,
-            "x_column": bond_style.x_column,
-            "y_column": bond_style.y_column,
-            "color": bond_style.color,
-            "width": bond_style.width,
-            "alpha": bond_style.alpha,
-            "style": bond_style.style,
-        }
-
-        draw_bonds(projected_df, ax, **bond_kwargs)
+        bond_kwargs = bond_style.get_kwargs()
+        # Remove None values to avoid overriding function defaults
+        # bond_kwargs = {k: v for k, v in bond_kwargs.items() if v is not None}
+        draw_bonds(projected_df, ax, bonds, **bond_kwargs)
 
     # set axes limits with a margin to prevent clipping
     xlims, ylims = _get_axes_limits(ax, multiplier=0.1)
@@ -220,29 +232,128 @@ def _get_axes_limits(ax, multiplier=0.1):
     return xlims, ylims
 
 
+def render_cluster_overlap(
+    cluster,
+    ref_cluster,
+    azimuthal_angle,
+    tilt_angle,
+    draw_bonds_flag=True,
+    cluster_style: Optional[ClusterStyle] = None,
+    bond_style: Optional[BondStyle] = None,
+    ref_cluster_style: Optional[ClusterStyle] = None,
+):
+    """Render two clusters projected onto a 2D plane for comparison. This
+    function is similar to render_cluster but allows for rendering a reference
+    cluster (outlines only) with the main cluster overlaid on top for visual
+    comparison.
+
+    Parameters
+    ----------
+    cluster : pandas.DataFrame or ClusterDataFrame
+        The main cluster to be rendered with full styling.
+    ref_cluster : pandas.DataFrame or ClusterDataFrame
+        The reference cluster to be rendered as outlines for comparison.
+    azimuthal_angle : float
+        The angle in degrees defining the normal vector in the XY plane
+        for projection.
+    tilt_angle : float
+        The angle in degrees defining the tilt of the normal vector
+        from the Z axis for projection.
+    draw_bonds_flag : bool, default True
+        Whether to draw bonds between atoms in the main cluster.
+    cluster_style : ClusterStyle, optional
+        Styling parameters for the main cluster.
+        If None, uses default ClusterStyle().
+    bond_style : BondStyle, optional
+        Styling parameters for bonds in the main cluster.
+        If None, uses default BondStyle().
+    ref_cluster_style : ClusterStyle, optional
+        Styling parameters for the reference cluster.
+        If None, uses black outlines by default.
+    """
+    # Use defaults if not provided
+    cluster_style = cluster_style or ClusterStyle()
+    bond_style = bond_style or BondStyle()
+    # Default style for reference cluster is black outlines
+    if ref_cluster_style is None:
+        ref_cluster_style = ClusterStyle(
+            uniform_color="k",
+            alpha=1.0,
+        )
+
+    # render the reference cluster first with outline styling
+    projected_ref_coords = project_to_plane(
+        ref_cluster, azimuthal_angle, tilt_angle
+    )
+    projected_ref_df = ref_cluster.copy()
+    projected_ref_df["e1"] = projected_ref_coords[:, 0]
+    projected_ref_df["e2"] = projected_ref_coords[:, 1]
+
+    ref_cluster_kwargs = ref_cluster_style.get_kwargs()
+    # Remove None values to avoid overriding function defaults
+    ref_cluster_kwargs = {
+        k: v for k, v in ref_cluster_kwargs.items() if v is not None
+    }
+
+    # Render the main cluster with full styling
+    fig, ax = render_cluster(
+        cluster,
+        azimuthal_angle,
+        tilt_angle,
+        draw_bonds_flag=draw_bonds_flag,
+        cluster_style=cluster_style,
+        bond_style=bond_style,
+    )
+    # Draw the reference cluster as outlines
+    draw_cluster_outline(projected_ref_df, ax, **ref_cluster_kwargs)
+
+    # reset and adjust axes limits to ensure both clusters are fully visible
+    plt.autoscale(enable=True, axis="both", tight=None)
+    xlims, ylims = _get_axes_limits(ax, multiplier=0.1)
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+    ax.set_aspect("equal", adjustable="box")
+    ax.axis("off")
+    plt.tight_layout()
+
+    return fig, ax
+
+
 if __name__ == "__main__":
     # Example usage with a sample cluster DataFrame
     import pandas as pd
 
     # Sample cluster data
-    # data = pd.read_pickle("tests/test_data/test_groundtruth_output_2.pkl")
+    ref_data = pd.read_pickle("tests/test_data/test_groundtruth_output_2.pkl")
     data = pd.read_pickle("tests/test_data/gen_2_output.pkl")
     cluster_df = pd.DataFrame(data)
-    print(cluster_df)
+    ref_cluster_df = pd.DataFrame(ref_data)
 
-    # Render the cluster with custom styles
-    fig, ax = render_cluster(
+    print(cluster_df)
+    """# Render the cluster with custom styles fig, ax = render_cluster(
+    cluster_df, azimuthal_angle=45, tilt_angle=30, cluster_style=ClusterStyle(
+
+    override_colors={"Fe": "#B44599", "O": "#2F4858"}     ),
+    bond_style=BondStyle(         bond_type="distance_cutoff",
+    distance_cutoff=2.3,         color="gray",         width=8,     ), )
+    """
+
+    # Render the cluster with a reference cluster for comparison
+    fig, ax = render_cluster_overlap(
         cluster_df,
+        ref_cluster_df,
         azimuthal_angle=45,
         tilt_angle=30,
         cluster_style=ClusterStyle(
-            override_colors={"Fe": "#B44599", "O": "#2F4858"}
+            override_colors={"Fe": "#B44599", "O": "#2F4858"},
+            alpha=0.8,
         ),
         bond_style=BondStyle(
             bond_type="distance_cutoff",
-            distance_cutoff=2.3,
+            distance_cutoff=2.1,
             color="gray",
             width=8,
         ),
     )
+
     plt.show()
