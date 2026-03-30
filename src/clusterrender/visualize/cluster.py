@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.colors
 from clusterrender.styles.style import get_clusterdataframe_styles
-from clusterrender.visualize.atom import draw_atom
+from clusterrender.visualize.atom import draw_atom, draw_atom_outline
 
 """
 Render a cluster of atoms as spheres
@@ -143,6 +143,103 @@ def draw_cluster(
             alpha=alpha,
             override_color=color,
             override_radius=radius,
+        )
+    return
+
+
+def draw_cluster_outline(
+    df,
+    ax,
+    x_column="e1",
+    y_column="e2",
+    species_column="species",
+    scale=200,
+    override_colors=None,
+    uniform_color=None,
+):
+    """Draw multiple atoms from a clusterdataframe as outlines only.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing atom information.
+    ax : matplotlib.axes.Axes
+        Matplotlib axes object to draw on.
+    x_column : str, default 'e1'
+        Name of column containing x coordinates.
+    y_column : str, default 'e2'
+        Name of column containing y coordinates.
+    species_column : str, default 'species'
+        Name of column containing element symbols.
+    scale : float, default 200
+        Scaling factor for atom sizes.
+    override_colors : dict or array-like, optional
+        Custom colors for atoms. Can be:
+        - dict: {species: color} mapping (e.g., {'Fe': 'red', 'O': 'blue'})
+        - array-like: Custom colors for each atom.
+        Shape should be (n_atoms, 3) or (n_atoms,)
+    uniform_color : array-like, optional
+        Single color to use for all atoms (overrides per-element colors).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function draws only the outlines of atoms using draw_atom_outline.
+    Alpha and radius overrides are not supported as draw_atom_outline
+    has a simpler interface focused on outline rendering.
+    """
+    if len(df) == 0:
+        return
+
+    # Get coordinates
+    x_coords = df[x_column].values
+    y_coords = df[y_column].values
+
+    # Handle uniform color override
+    if uniform_color is not None:
+        # Use uniform color for all atoms
+        colors = (
+            np.tile(uniform_color, (len(df), 1))
+            if len(np.array(uniform_color).shape) == 1
+            else np.array([uniform_color] * len(df))
+        )
+    else:
+        # Get element-specific styles as base
+        style_colors, _ = get_clusterdataframe_styles(df, species_column)
+
+        # Start with default colors
+        colors = style_colors.copy()
+
+        # Apply color overrides based on type (dict or array)
+        if override_colors is not None:
+            if isinstance(override_colors, dict):
+                # Dict mapping: {species: color}
+                species_list = df[species_column].values
+                for i, species in enumerate(species_list):
+                    if species in override_colors:
+                        new_color = override_colors[species]
+                        if isinstance(new_color, str):
+                            colors[i] = matplotlib.colors.to_rgb(new_color)
+                        else:
+                            colors[i] = new_color
+            else:
+                # Array-like override (backward compatibility)
+                colors = np.array(override_colors)
+
+    # Draw each atom outline
+    for i, (x, y, color) in enumerate(zip(x_coords, y_coords, colors)):
+        # Get species for the draw_atom_outline function
+        species = df.iloc[i][species_column]
+        draw_atom_outline(
+            x,
+            y,
+            species,
+            ax,
+            scale=scale,
+            override_color=color,
         )
     return
 
