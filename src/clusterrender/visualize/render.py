@@ -225,7 +225,8 @@ if __name__ == "__main__":
     import pandas as pd
 
     # Sample cluster data
-    data = pd.read_pickle("tests/test_data/test_groundtruth_output_1.pkl")
+    # data = pd.read_pickle("tests/test_data/test_groundtruth_output_2.pkl")
+    data = pd.read_pickle("tests/test_data/gen_2_output.pkl")
     cluster_df = pd.DataFrame(data)
     print(cluster_df)
 
@@ -237,6 +238,11 @@ if __name__ == "__main__":
         cluster_style=ClusterStyle(
             override_colors={"Fe": "#B44599", "O": "#2F4858"}
         ),
-        bond_style=BondStyle(bond_type="center_to_all", color="gray", width=4),
+        bond_style=BondStyle(
+            bond_type="distance_cutoff",
+            distance_cutoff=2.3,
+            color="gray",
+            width=8,
+        ),
     )
     plt.show()
