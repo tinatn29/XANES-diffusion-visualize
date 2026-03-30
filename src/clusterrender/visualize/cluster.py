@@ -154,6 +154,7 @@ def draw_cluster_outline(
     y_column="e2",
     species_column="species",
     scale=200,
+    alpha=1.0,
     override_colors=None,
     uniform_color=None,
 ):
@@ -240,6 +241,7 @@ def draw_cluster_outline(
             ax,
             scale=scale,
             override_color=color,
+            alpha=alpha,
         )
     return
 
