@@ -139,7 +139,9 @@ def draw_atom(
     return
 
 
-def draw_atom_outline(x, y, species, ax, scale=200, override_color=None):
+def draw_atom_outline(
+    x, y, species, ax, scale=200, alpha=1.0, override_color=None
+):
     """Draw an outline of an atom as a circle.
 
     Parameters
@@ -178,9 +180,9 @@ def draw_atom_outline(x, y, species, ax, scale=200, override_color=None):
         s=base_size,
         color="none",
         edgecolor=line_color,
-        linewidths=0.2,
+        linewidths=0.5,
         zorder=100,
-        alpha=1.0,
+        alpha=alpha,
     )
 
     return
