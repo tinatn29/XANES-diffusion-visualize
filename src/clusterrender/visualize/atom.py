@@ -137,3 +137,50 @@ def draw_atom(
             alpha=min(5 * alpha, 1.0),
         )
     return
+
+
+def draw_atom_outline(x, y, species, ax, scale=200, override_color=None):
+    """Draw an outline of an atom as a circle.
+
+    Parameters
+    ----------
+    x : float
+        X coordinate of the atom center.
+    y : float
+        Y coordinate of the atom center.
+    species : str
+        Element symbol (e.g., 'H', 'C', 'O') for styling lookup.
+    ax : matplotlib.axes.Axes
+        Matplotlib axes object to draw on.
+    scale : float, optional
+        Scaling factor to adjust the marker size (default is 200).
+    override_color : array-like, optional
+        RGB color to use instead of element's default color.
+        Should be in format [R, G, B] with values in [0, 1].
+
+    Returns
+    -------
+    None
+    """
+
+    # load atom's style
+    style = get_element_style(species)
+    line_color = (
+        override_color if override_color is not None else style["color"]
+    )
+    radius = style["radius"]
+
+    # draw the outline as a circle with no fill and a colored edge
+    base_size = _atom_size(radius, scale=scale)
+    ax.scatter(
+        [x],
+        [y],
+        s=base_size,
+        color="none",
+        edgecolor=line_color,
+        linewidths=0.2,
+        zorder=100,
+        alpha=1.0,
+    )
+
+    return
