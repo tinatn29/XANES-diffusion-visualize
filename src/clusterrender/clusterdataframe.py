@@ -218,3 +218,163 @@ class ClusterDataFrame(pd.DataFrame):
         self.apply_transformation(R, t)
 
         return R, t
+
+    def render(
+        self,
+        azimuthal_angle,
+        tilt_angle,
+        draw_bonds_flag=True,
+        cluster_style=None,
+        bond_style=None,
+    ):
+        """Render this cluster using the render_cluster function.
+
+        Parameters
+        ----------
+        azimuthal_angle : float
+            The angle in degrees defining the normal vector in the XY plane
+            for projection.
+        tilt_angle : float
+            The angle in degrees defining the tilt of the normal vector
+            from the Z axis for projection.
+        draw_bonds_flag : bool, default True
+            Whether to draw bonds between atoms.
+        cluster_style : ClusterStyle, optional
+            Styling parameters for atoms. If None, uses default ClusterStyle().
+        bond_style : BondStyle, optional
+            Styling parameters for bonds. If None, uses default BondStyle().
+
+        Returns
+        -------
+        fig, ax : matplotlib figure and axes
+            The rendered figure and axes with the projected visualization.
+
+        Examples
+        --------
+        >>> # Basic usage with defaults
+        >>> fig, ax = cluster_df.render(45, 30)
+
+        >>> # Custom atom styling with uniform properties
+        >>> from clusterrender.visualize.render import ClusterStyle, BondStyle
+        >>> custom_atoms = ClusterStyle(scale=300, alpha=0.7,
+        ...     uniform_color='red')
+        >>> fig, ax = cluster_df.render(45, 30, cluster_style=custom_atoms)
+
+        >>> # Custom colors by species using dictionary
+        >>> atom_colors = ClusterStyle(override_colors={'Fe': 'red',
+        ...     'O': 'blue'})
+        >>> fig, ax = cluster_df.render(45, 30, cluster_style=atom_colors)
+        """
+        from clusterrender.visualize.render import render_cluster
+
+        return render_cluster(
+            cluster=self,
+            azimuthal_angle=azimuthal_angle,
+            tilt_angle=tilt_angle,
+            draw_bonds_flag=draw_bonds_flag,
+            cluster_style=cluster_style,
+            bond_style=bond_style,
+        )
+
+    def render_with(
+        self,
+        ref_cluster,
+        azimuthal_angle,
+        tilt_angle,
+        draw_bonds_flag=True,
+        cluster_style=None,
+        bond_style=None,
+        ref_cluster_style=None,
+    ):
+        """Render this cluster with a reference cluster for comparison.
+
+        This method renders two clusters for comparison.
+        The reference cluster is rendered as outlines only while this cluster
+        is rendered with full styling on top.
+
+        Parameters
+        ----------
+        ref_cluster : pandas.DataFrame or ClusterDataFrame
+            The reference cluster to be rendered as outlines for comparison.
+        azimuthal_angle : float
+            The angle in degrees defining the normal vector in the XY plane
+            for projection.
+        tilt_angle : float
+            The angle in degrees defining the tilt of the normal vector
+            from the Z axis for projection.
+        draw_bonds_flag : bool, default True
+            Whether to draw bonds between atoms in the main cluster.
+        cluster_style : ClusterStyle, optional
+            Styling parameters for this main cluster.
+            If None, uses default ClusterStyle().
+        bond_style : BondStyle, optional
+            Styling parameters for bonds in this main cluster.
+            If None, uses default BondStyle().
+        ref_cluster_style : ClusterStyle, optional
+            Styling parameters for the reference cluster.
+            If None, uses black outlines by default.
+
+        Returns
+        -------
+        fig, ax : matplotlib figure and axes
+            The rendered figure and axes with both clusters.
+
+        Examples
+        --------
+        >>> # Basic usage with defaults
+        >>> fig, ax = cluster_df.render_with(ref_cluster, 45, 30)
+
+        >>> # Custom styling for both clusters
+        >>> from clusterrender.visualize.render import ClusterStyle, BondStyle
+        >>> main_style = ClusterStyle(override_colors={'Fe': 'red',
+        ...     'O': 'blue'})
+        >>> ref_style = ClusterStyle(uniform_color='gray', alpha=0.5)
+        >>> fig, ax = cluster_df.render_with(
+        ...     ref_cluster, 45, 30,
+        ...     cluster_style=main_style,
+        ...     ref_cluster_style=ref_style
+        ... )
+        """
+        from clusterrender.visualize.render import render_cluster_overlap
+
+        return render_cluster_overlap(
+            cluster=self,
+            ref_cluster=ref_cluster,
+            azimuthal_angle=azimuthal_angle,
+            tilt_angle=tilt_angle,
+            draw_bonds_flag=draw_bonds_flag,
+            cluster_style=cluster_style,
+            bond_style=bond_style,
+            ref_cluster_style=ref_cluster_style,
+        )
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # try this first
+    ref_cdf = ClusterDataFrame(
+        pd.read_pickle("tests/test_data/test_groundtruth_output_1.pkl")
+    )
+    cdf = ClusterDataFrame(pd.read_pickle("tests/test_data/gen_1_output.pkl"))
+    print(ref_cdf)
+    print(cdf)
+
+    # rendering style
+    from clusterrender.visualize.render import BondStyle
+
+    bond_style = BondStyle(
+        bond_type="distance_cutoff",
+        distance_cutoff=2.1,
+        color="gray",
+        width=8,
+        alpha=0.8,
+    )
+
+    cdf.render_with(ref_cdf, 45, 0, bond_style=bond_style)
+    R, t = cdf.align_with(ref_cdf, mask=True)
+    print(cdf)
+    cdf.render_with(
+        ref_cdf, azimuthal_angle=15, tilt_angle=15, bond_style=bond_style
+    )
+    plt.show()
