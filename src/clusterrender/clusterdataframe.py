@@ -391,4 +391,6 @@ if __name__ == "__main__":
     cdf.render_with(
         ref_cdf, azimuthal_angle=15, tilt_angle=15, bond_style=bond_style
     )
+    cdf.to_xyz("output.xyz", comment="Aligned cluster test")
+
     plt.show()
