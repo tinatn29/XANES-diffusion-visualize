@@ -357,9 +357,9 @@ class ClusterDataFrame(pd.DataFrame):
             Path to the output XYZ file.
         """
         with open(file_path, "w") as f:
-            f.write(f"{len(self.df)}\n")
+            f.write(f"{len(self)}\n")
             f.write(f"XYZ coordinates {comment}\n")
-            for _, row in self.df.iterrows():
+            for _, row in self.iterrows():
                 f.write(f"{row['species']} {row['x']} {row['y']} {row['z']}\n")
 
 
@@ -391,4 +391,6 @@ if __name__ == "__main__":
     cdf.render_with(
         ref_cdf, azimuthal_angle=15, tilt_angle=15, bond_style=bond_style
     )
+    cdf.to_xyz("output.xyz", comment="Aligned cluster test")
+
     plt.show()
