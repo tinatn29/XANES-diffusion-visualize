@@ -180,7 +180,7 @@ def draw_atom_outline(
         s=base_size,
         color="none",
         edgecolor=line_color,
-        linewidths=0.5,
+        linewidths=1,
         zorder=100,
         alpha=alpha,
     )

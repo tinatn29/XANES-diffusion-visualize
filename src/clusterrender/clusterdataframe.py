@@ -221,8 +221,8 @@ class ClusterDataFrame(pd.DataFrame):
 
     def render(
         self,
-        azimuthal_angle,
-        tilt_angle,
+        azimuthal_angle=45,
+        tilt_angle=30,
         draw_bonds_flag=True,
         cluster_style=None,
         bond_style=None,
@@ -279,8 +279,8 @@ class ClusterDataFrame(pd.DataFrame):
     def render_with(
         self,
         ref_cluster,
-        azimuthal_angle,
-        tilt_angle,
+        azimuthal_angle=45,
+        tilt_angle=30,
         draw_bonds_flag=True,
         cluster_style=None,
         bond_style=None,
@@ -347,6 +347,20 @@ class ClusterDataFrame(pd.DataFrame):
             bond_style=bond_style,
             ref_cluster_style=ref_cluster_style,
         )
+
+    def to_xyz(self, file_path, comment=""):
+        """Export the cluster to an XYZ file.
+
+        Parameters
+        ----------
+        file_path: str
+            Path to the output XYZ file.
+        """
+        with open(file_path, "w") as f:
+            f.write(f"{len(self.df)}\n")
+            f.write(f"XYZ coordinates {comment}\n")
+            for _, row in self.df.iterrows():
+                f.write(f"{row['species']} {row['x']} {row['y']} {row['z']}\n")
 
 
 if __name__ == "__main__":
