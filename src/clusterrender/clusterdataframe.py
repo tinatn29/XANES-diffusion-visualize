@@ -357,9 +357,9 @@ class ClusterDataFrame(pd.DataFrame):
             Path to the output XYZ file.
         """
         with open(file_path, "w") as f:
-            f.write(f"{len(self.df)}\n")
+            f.write(f"{len(self)}\n")
             f.write(f"XYZ coordinates {comment}\n")
-            for _, row in self.df.iterrows():
+            for _, row in self.iterrows():
                 f.write(f"{row['species']} {row['x']} {row['y']} {row['z']}\n")
 
 
