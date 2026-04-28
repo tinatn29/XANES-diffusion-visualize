@@ -362,35 +362,64 @@ class ClusterDataFrame(pd.DataFrame):
             for _, row in self.iterrows():
                 f.write(f"{row['species']} {row['x']} {row['y']} {row['z']}\n")
 
+    def assign_shells(self, cutoff_distance=2.2):
+        """Assign shells to atoms based on a cutoff distance. The first row is
+        the central atom (shell = 0). The following rows with distance from
+        origin <= cutoff_distance has shell = 1. Every other row has shell = 2.
+
+        Parameters
+        ----------
+        cutoff_distance : float
+            The distance cutoff to determine which atoms belong to
+            the same shell.
+
+        Returns
+        -------
+        None
+            The method updates the cluster dataframe in place, assigning a
+            'shell' column to each atom indicating its shell number.
+        """
+        if "distance" not in self.columns:
+            self["distance"] = (
+                self["x"] ** 2 + self["y"] ** 2 + self["z"] ** 2
+            ) ** 0.5
+
+        if "shell" in self.columns:
+            print("Shell column already exists.")
+            return
+
+        # sort by distance first
+        self.sort_values(by="distance", inplace=True)
+        # initialize a new shell column
+        self["shell"] = 2
+        self.loc[self["distance"] <= cutoff_distance, "shell"] = 1
+        # set shell of center atom = 0
+        if len(self) > 0:
+            self.at[0, "shell"] = 0
+        return
+
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
 
     # try this first
     ref_cdf = ClusterDataFrame(
-        pd.read_pickle("tests/test_data/test_groundtruth_output_1.pkl")
+        pd.read_pickle("tests/test_data/test_groundtruth_output_2.pkl")
     )
-    cdf = ClusterDataFrame(pd.read_pickle("tests/test_data/gen_1_output.pkl"))
+    cdf = ClusterDataFrame(pd.read_pickle("tests/test_data/gen_2_output.pkl"))
+    cdf.center_cluster(center_species="Fe")
+    cdf.assign_shells(cutoff_distance=2.1)
     print(ref_cdf)
     print(cdf)
+    """# rendering style import matplotlib.pyplot as plt from
+    clusterrender.visualize.render import BondStyle
 
-    # rendering style
-    from clusterrender.visualize.render import BondStyle
+    bond_style = BondStyle(     bond_type="distance_cutoff",
+    distance_cutoff=2.1,     color="gray",     width=8,     alpha=0.8, )
 
-    bond_style = BondStyle(
-        bond_type="distance_cutoff",
-        distance_cutoff=2.1,
-        color="gray",
-        width=8,
-        alpha=0.8,
-    )
-
-    cdf.render_with(ref_cdf, 45, 0, bond_style=bond_style)
-    R, t = cdf.align_with(ref_cdf, mask=True)
-    print(cdf)
-    cdf.render_with(
-        ref_cdf, azimuthal_angle=15, tilt_angle=15, bond_style=bond_style
-    )
+    cdf.render_with(ref_cdf, 45, 0, bond_style=bond_style) R, t =
+    cdf.align_with(ref_cdf, mask=True) print(cdf) cdf.render_with(
+    ref_cdf, azimuthal_angle=15, tilt_angle=15, bond_style=bond_style )
     cdf.to_xyz("output.xyz", comment="Aligned cluster test")
 
     plt.show()
+    """
