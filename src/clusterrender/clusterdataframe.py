@@ -398,6 +398,45 @@ class ClusterDataFrame(pd.DataFrame):
             self.at[0, "shell"] = 0
         return
 
+    def calc_difference(self, ref_cluster, metric="rmsd"):
+        """Calculate the difference between this cluster and a reference
+        cluster using a specified metric.
+
+        Parameters
+        ----------
+        ref_cluster : ClusterDataFrame
+            The reference cluster to compare against.
+        metric : str, default "rmsd"
+            The metric to use for calculating the difference. Options are:
+            - "rmsd": Root Mean Square Distance
+            - "mde": Mean Distance Error
+
+        Returns
+        -------
+        float
+            The calculated difference between the two clusters based on the
+            specified metric.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported metric is specified.
+        """
+        if metric == "rmsd":
+            from clusterrender.compute.rmsd import root_mean_square_distance
+
+            return root_mean_square_distance(self, ref_cluster)
+
+        elif metric == "mde":
+            from clusterrender.compute.mde import mean_distance_error
+
+            return mean_distance_error(self, ref_cluster)
+
+        else:
+            raise ValueError(
+                f"Unsupported metric '{metric}'. Use 'rmsd' or 'mde'."
+            )
+
 
 if __name__ == "__main__":
 
