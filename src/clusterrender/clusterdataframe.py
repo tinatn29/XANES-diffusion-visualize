@@ -437,6 +437,26 @@ class ClusterDataFrame(pd.DataFrame):
                 f"Unsupported metric '{metric}'. Use 'rmsd' or 'mde'."
             )
 
+    def permute_to_match(self, ref_cluster):
+        """Permute the order of atoms in this cluster to match the order of a
+        reference cluster using the Hungarian algorithm.
+
+        Parameters
+        ----------
+        ref_cluster : ClusterDataFrame
+            The reference cluster to match.
+
+        Returns
+        -------
+        None
+            The method updates the cluster dataframe in place, permuting the
+            rows to best match the reference cluster.
+        """
+        from clusterrender.transform.permute_hungarian import permute_hungarian
+
+        permuted_cluster = permute_hungarian(self, ref_cluster)
+        self.update(permuted_cluster)
+
 
 if __name__ == "__main__":
 
