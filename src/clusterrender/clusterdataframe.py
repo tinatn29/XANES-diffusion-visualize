@@ -456,6 +456,7 @@ class ClusterDataFrame(pd.DataFrame):
 
         permuted_cluster = permute_hungarian(self, ref_cluster)
         self.update(permuted_cluster)
+        return permuted_cluster
 
 
 if __name__ == "__main__":
