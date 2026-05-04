@@ -6,27 +6,28 @@ from clusterrender.transform.permute_hungarian import permute_hungarian
 # Make up test data
 points_1 = pd.DataFrame(
     {
-        "species": ["M", "O", "O"],
-        "x": [0, 0, 0],
-        "y": [0, 0, 0],
-        "z": [0, 1, -1.1],
+        "species": ["M", "O", "O", "O"],
+        "x": [0, 0, 0, 1.01],
+        "y": [0, 0, 0, 0],
+        "z": [0, 1.0, -1.1, 0],
     }
 )
 
 # a little different than points_1
 points_2 = pd.DataFrame(
     {
-        "species": ["M", "O", "O"],
-        "x": [0, 0, 0],
-        "y": [0, 0, 0],
-        "z": [0, 1, -1.11],
+        "species": ["M", "O", "O", "O"],
+        "x": [0, 0, 0, 1.015],
+        "y": [0, 0, 0, 0],
+        "z": [0, 1.0, -1.05, 0],
     }
 )
 
 # permuted points
-points_1_perm = points_1.iloc[[1, 0, 2]].reset_index(drop=True)
-points_1_perm2 = points_1.iloc[[0, 2, 1]].reset_index(drop=True)
-points_2_perm = points_2.iloc[[1, 0, 2]].reset_index(drop=True)
+points_1_perm = points_1.iloc[[1, 0, 2, 3]].reset_index(drop=True)
+points_1_perm2 = points_1.iloc[[0, 2, 1, 3]].reset_index(drop=True)
+points_1_perm3 = points_1.iloc[[0, 1, 3, 2]].reset_index(drop=True)
+points_2_perm = points_2.iloc[[1, 0, 3, 2]].reset_index(drop=True)
 
 # load cdf from files
 gt_cdf_1 = pd.read_pickle("tests/test_data/gt_1_output.pkl")
@@ -40,6 +41,7 @@ permute_data = [
     (points_1_perm, points_1, points_1),
     (points_1, points_1, points_1),
     (points_1_perm2, points_1, points_1),
+    (points_1_perm3, points_1, points_1),
     # slightly different points, permuted
     (points_2_perm, points_1, points_2),
     # test with cdf data
@@ -53,8 +55,9 @@ permute_data = [
 def test_permute_hungarian(cluster, ref_cluster, expected_output):
     """Test the permute_hungarian function."""
     permuted_cluster = permute_hungarian(cluster, ref_cluster)
+    print(cluster)
+    print(ref_cluster)
     print(permuted_cluster)
-    print(expected_output)
     # check if the permuted points are equal to the expected output
     pd.testing.assert_frame_equal(
         permuted_cluster, expected_output, check_dtype=False
