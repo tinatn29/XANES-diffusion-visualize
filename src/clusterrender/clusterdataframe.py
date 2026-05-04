@@ -437,14 +437,18 @@ class ClusterDataFrame(pd.DataFrame):
                 f"Unsupported metric '{metric}'. Use 'rmsd' or 'mde'."
             )
 
-    def permute_to_match(self, ref_cluster):
+    def permute_to_match(self, ref_cluster, method="hungarian"):
         """Permute the order of atoms in this cluster to match the order of a
-        reference cluster using the Hungarian algorithm.
+        reference cluster using the specified method.
 
         Parameters
         ----------
         ref_cluster : ClusterDataFrame
             The reference cluster to match.
+        method : str, default "hungarian"
+            The method to use for permutation. Options are:
+            - "hungarian": Use the Hungarian algorithm
+            - "greedy": Use a greedy algorithm
 
         Returns
         -------
@@ -452,9 +456,24 @@ class ClusterDataFrame(pd.DataFrame):
             The method updates the cluster dataframe in place, permuting the
             rows to best match the reference cluster.
         """
-        from clusterrender.transform.permute_hungarian import permute_hungarian
+        if method == "hungarian":
+            from clusterrender.transform.permute_hungarian import (
+                permute_hungarian,
+            )
 
-        permuted_cluster = permute_hungarian(self, ref_cluster)
+            permuted_cluster = permute_hungarian(self, ref_cluster)
+
+        elif method == "greedy":
+            from clusterrender.transform.permute_greedy import permute_greedy
+
+            permuted_cluster = permute_greedy(self, ref_cluster)
+
+        else:
+            raise ValueError(
+                f"Unsupported method '{method}'. Use 'hungarian' or \
+                    'greedy'."
+            )
+
         self.update(permuted_cluster)
         return permuted_cluster
 
