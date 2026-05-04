@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
-from clusterrender.transform.permute import permute_cluster
+from clusterrender.transform.permute_hungarian_dm import (
+    permute_cluster_hungarian,
+)
+
+# from clusterrender.transform.permute import permute_cluster
 
 """
 Kabsch algorithm to permute, rotate, and align a cluster
@@ -83,7 +87,8 @@ def align_clusters(
     """
     if need_permute:
         # find the best permutation compared to the ground truth
-        cluster = permute_cluster(cluster, ref_cluster)
+        # cluster = permute_cluster(cluster, ref_cluster)
+        cluster = permute_cluster_hungarian(cluster, ref_cluster)
 
     R, t, cluster_aligned = _kabsch_align(
         cluster[["x", "y", "z"]].values,
