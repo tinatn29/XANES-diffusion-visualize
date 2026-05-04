@@ -104,7 +104,7 @@ def permute_cluster_hungarian(cluster, ref_cluster):
         Same structure as input `cluster` but with reordered rows.
     """
     cost_matrix = _get_cost_matrix(cluster, ref_cluster)
-    print(cost_matrix)
+    # print(cost_matrix)
 
     # Solve the assignment problem using Hungarian algorithm
     row_indices, col_indices = linear_sum_assignment(cost_matrix)
