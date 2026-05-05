@@ -45,9 +45,9 @@ def permute_hungarian(cluster, ref_cluster):
 
     for i in range(n_atoms):
         for j in range(n_atoms):
-            # Euclidean distance between atoms i and j
-            cost_matrix[i, j] = np.linalg.norm(
-                cluster_coords[i] - ref_coords[j]
+            # Euclidean distance squared between atoms i and j
+            cost_matrix[i, j] = (
+                np.linalg.norm(cluster_coords[i] - ref_coords[j]) ** 2
             )
 
     # Solve the assignment problem using Hungarian algorithm
