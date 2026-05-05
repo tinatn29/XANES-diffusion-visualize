@@ -437,7 +437,9 @@ class ClusterDataFrame(pd.DataFrame):
                 f"Unsupported metric '{metric}'. Use 'rmsd' or 'mde'."
             )
 
-    def permute_to_match(self, ref_cluster, method="hungarian"):
+    def permute_to_match(
+        self, ref_cluster, method="hungarian", max_iterations=10
+    ):
         """Permute the order of atoms in this cluster to match the order of a
         reference cluster using the specified method.
 
@@ -449,6 +451,10 @@ class ClusterDataFrame(pd.DataFrame):
             The method to use for permutation. Options are:
             - "hungarian": Use the Hungarian algorithm
             - "greedy": Use a greedy algorithm
+            - "iterate": Use an iterative Hungarian algorithm
+        max_iterations : int, optional
+            Maximum number of iterations for the "iterate" method.
+            Default is 10.
 
         Returns
         -------
@@ -467,6 +473,13 @@ class ClusterDataFrame(pd.DataFrame):
             from clusterrender.transform.permute_greedy import permute_greedy
 
             permuted_cluster = permute_greedy(self, ref_cluster)
+
+        elif method == "iterate":
+            from clusterrender.transform.permute_iterate import permute_iterate
+
+            permuted_cluster = permute_iterate(
+                self, ref_cluster, max_iterations=max_iterations
+            )
 
         else:
             raise ValueError(
